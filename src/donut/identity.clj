@@ -36,7 +36,7 @@
   (user-by-email* [datasource email])
   (user-signup* [datasource user])
   (user-by-credentials* [datasource credentials])
-  (user-by-password-reset-token* [datasource token])
+  (user-by-reset-password-token* [datasource token])
   (create-reset-password-token* [datasource token])
   (reset-password* [datasource password-reset]))
 
@@ -58,19 +58,19 @@
   [datasource user]
   (create-reset-password-token* datasource
                                 (assoc user
-                                       :user/password_reset_token (nano-id/nano-id 10)
-                                       :user/password_reset_token_created_at (current-time-seconds))))
+                                       :user/reset_password_token (nano-id/nano-id 10)
+                                       :user/reset_password_token_created_at (current-time-seconds))))
 
 (defn reset-password
   [datasource {:keys [token token-max-age] :as password-reset}]
-  (when-let [user (user-by-password-reset-token* datasource token)]
+  (when-let [user (user-by-reset-password-token* datasource token)]
     (if (token-expired? user token-max-age)
       :expired
       (reset-password* datasource password-reset))))
 
 (defn- valid-token?
   [datasource token token-max-age]
-  (let [user (user-by-password-reset-token* datasource token)]
+  (let [user (user-by-reset-password-token* datasource token)]
     (and user (not (token-expired? user token-max-age)))))
 
 ;;---
@@ -145,7 +145,7 @@
             user-email (:user/email user)
             uri        (:path (r/match-by-name frontend-router
                                                :donut.frontend.identity/reset-password
-                                               {:user/password_reset_token token}))]
+                                               {:user/reset_password_token token}))]
         (send-email ::create-reset-password-token
                     {:data {:user-email user-email
                             :token      token
@@ -176,7 +176,7 @@
   [{{:keys [datasource token-max-age]} :dependencies
     :keys [all-params]}]
   (if (valid-token? datasource
-                    (:user/password_reset_token all-params)
+                    (:user/reset_password_token all-params)
                     (or token-max-age DEFAULT-TOKEN-MAX-AGE))
     {:status 200}
     {:status 400}))
@@ -188,7 +188,7 @@
                            all-params)
       (do
         (reset-password datasource
-                        {:token         (:user/password_reset_token all-params)
+                        {:token         (:user/reset_password_token all-params)
                          :token-max-age (or token-max-age DEFAULT-TOKEN-MAX-AGE)
                          :user/password (:user/password all-params)})
         {:status 200})))
@@ -219,7 +219,7 @@
     {:name :donut.endpoint.identity/logout
      :post {:handler (ds/local-ref [:logout-handler])}}]
 
-   ["/reset-password-token/{user/password_reset_token}"
+   ["/reset-password-token/{user/reset_password_token}"
     {:name :donut.endpoint.identity/reset-password-token
      :get  {:handler (ds/local-ref [:check-reset-password-token-handler])}
      :put  {:handler (ds/local-ref [:reset-password-handler])}}]
