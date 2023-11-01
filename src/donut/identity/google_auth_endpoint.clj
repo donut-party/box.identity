@@ -2,7 +2,8 @@
   (:require
    [clojure.walk :as walk]
    [donut.endpoint.route-group :as derg]
-   [donut.identity-store :as diis]
+   [donut.identity.identity-endpoint :as diie]
+   [donut.identity.identity-store :as diis]
    [donut.system :as ds])
   (:import
    [com.google.api.client.googleapis.auth.oauth2
@@ -52,7 +53,7 @@
   [datasource email]
   (-> datasource
       (identity-provider-authenticated! email)
-      diis/auth-success-response))
+      diie/auth-success-response))
 
 (defn handle-verify-token-failure
   []
