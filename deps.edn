@@ -1,11 +1,12 @@
 {:paths ["src"]
- :deps  {org.clojure/clojure  {:mvn/version "1.10.3"}
-         metosin/malli        {:mvn/version "0.11.0"}
-         party.donut/email    {:mvn/version "0.0.11"}
-         party.donut/endpoint {:mvn/version "0.0.28"}
-         party.donut/hooked   {:mvn/version "0.0.12"}
-         party.donut/sugar    {:mvn/version "0.0.19"}
-         party.donut/system   {:mvn/version "0.0.214"}}
+ :deps  {com.google.api-client/google-api-client {:mvn/version "2.2.0"}
+         org.clojure/clojure                     {:mvn/version "1.10.3"}
+         metosin/malli                           {:mvn/version "0.11.0"}
+         party.donut/email                       {:mvn/version "0.0.11"}
+         party.donut/endpoint                    {:mvn/version "0.0.28"}
+         party.donut/hooked                      {:mvn/version "0.0.12"}
+         party.donut/sugar                       {:mvn/version "0.0.19"}
+         party.donut/system                      {:mvn/version "0.0.214"}}
 
  :aliases
  {:dev

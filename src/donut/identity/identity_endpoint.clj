@@ -1,77 +1,13 @@
-(ns donut.identity
+(ns donut.identity.identity-endpoint
   (:require
-   [buddy.hashers :as buddy-hashers]
    [donut.email :as de]
    [donut.endpoint.response :as der]
    [donut.endpoint.route-group :as derg]
    [donut.hooked :as hooked]
+   [donut.identity.identity-store :as diis]
    [donut.sugar.utils :as dsu]
    [donut.system :as ds]
-   [nano-id.core :as nano-id]
    [reitit.core :as r]))
-
-(def DEFAULT-TOKEN-MAX-AGE
-  "sixty minutes"
-  (* 60 20))
-
-;;---
-;; helpers
-;;---
-
-(defn- current-time-seconds
-  []
-  (quot (System/currentTimeMillis) 1000))
-
-(defn- token-expired?
-  [user token-max-age]
-  (> (- (current-time-seconds)
-        (:user/password_reset_token_created_at user))
-     token-max-age))
-
-;;---
-;; data store interactions
-;;---
-
-(defprotocol IdentityStore
-  (user-by-email* [datasource email])
-  (user-signup* [datasource user])
-  (user-by-credentials* [datasource credentials])
-  (user-by-reset-password-token* [datasource token])
-  (create-reset-password-token* [datasource token])
-  (reset-password* [datasource password-reset]))
-
-(defn user-by-credentials
-  [datasource {:keys [:user/password] :as credentials}]
-  (let [user (user-by-credentials* datasource credentials)]
-    (and user
-         (not-empty password)
-         (:valid (buddy-hashers/verify password (:user/password_hash user)))
-         user)))
-
-(defn user-signup
-  [datasource user]
-  (user-signup* datasource (-> user
-                               (dissoc :user/password)
-                               (assoc :user/password_hash (buddy-hashers/encrypt (:user/password user))))))
-
-(defn create-reset-password-token
-  [datasource user]
-  (create-reset-password-token* datasource
-                                (assoc user
-                                       :user/reset_password_token (nano-id/nano-id 10)
-                                       :user/reset_password_token_created_at (current-time-seconds))))
-
-(defn reset-password
-  [datasource {:keys [token token-max-age] :as password-reset}]
-  (when-let [user (user-by-reset-password-token* datasource token)]
-    (if (token-expired? user token-max-age)
-      :expired
-      (reset-password* datasource password-reset))))
-
-(defn- valid-token?
-  [datasource token token-max-age]
-  (let [user (user-by-reset-password-token* datasource token)]
-    (and user (not (token-expired? user token-max-age)))))
 
 ;;---
 ;; hooks
@@ -114,7 +50,7 @@
    [:fn {:error/message "email address already taken"
          :error/path    [:user/email]}
     (fn [{:keys [:user/email]}]
-      (not (user-by-email* datasource email)))]])
+      (not (diis/-user-by-email datasource email)))]])
 
 (defn signup-handler
   [{{:keys [datasource]} :dependencies
@@ -124,7 +60,7 @@
     (do
       (hooked/call ::signup-handler.validation-errors (assoc req :errors errors))
       (der/errors-response errors all-params))
-    (let [user (user-signup datasource all-params)]
+    (let [user (diis/user-signup! datasource all-params)]
       (hooked/call ::signup-handler.signup-success (assoc req :user user))
       (auth-success-response user))))
 
@@ -139,9 +75,9 @@
   [{{:keys [datasource send-email frontend-router]} :dependencies
     :keys [all-params]
     :as req}]
-  (let [user (user-by-email* datasource (:user/email all-params))]
+  (let [user (diis/-user-by-email datasource (:user/email all-params))]
     (when user
-      (let [token      (create-reset-password-token datasource user)
+      (let [token      (diis/create-reset-password-token! datasource user)
             user-email (:user/email user)
             uri        (:path (r/match-by-name frontend-router
                                                :donut.frontend.identity/reset-password
@@ -159,7 +95,7 @@
 (defn login-handler
   [{{:keys [datasource]} :dependencies
     :keys [all-params]}]
-  (let [user (user-by-credentials datasource all-params)]
+  (let [user (diis/user-by-credentials datasource all-params)]
     (if user
       (auth-success-response user)
       {:status  401
@@ -175,9 +111,9 @@
 (defn check-reset-password-token-handler
   [{{:keys [datasource token-max-age]} :dependencies
     :keys [all-params]}]
-  (if (valid-token? datasource
-                    (:user/reset_password_token all-params)
-                    (or token-max-age DEFAULT-TOKEN-MAX-AGE))
+  (if (diis/valid-token? datasource
+                         (:user/reset_password_token all-params)
+                         (or token-max-age diis/DEFAULT-TOKEN-MAX-AGE))
     {:status 200}
     {:status 400}))
 
@@ -187,10 +123,10 @@
   (or (der/errors-response [:map [:user/password [:string {:min 8}]]]
                            all-params)
       (do
-        (reset-password datasource
-                        {:token         (:user/reset_password_token all-params)
-                         :token-max-age (or token-max-age DEFAULT-TOKEN-MAX-AGE)
-                         :user/password (:user/password all-params)})
+        (diis/reset-password! datasource
+                              {:token         (:user/reset_password_token all-params)
+                               :token-max-age (or token-max-age diis/DEFAULT-TOKEN-MAX-AGE)
+                               :user/password (:user/password all-params)})
         {:status 200})))
 
 ;;---
