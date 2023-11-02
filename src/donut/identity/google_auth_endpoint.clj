@@ -79,8 +79,8 @@
 (defn google-auth-route-group
   [& [components]]
   (derg/route-group
-   (merge {:routes routes
-           :group-path "/identity/google-auth"
-           :google-id-token-verifier GoogleIdTokenVerifierComponent
-           :google-client-id (ds/ref [:env :google-client-id])}
-          components)))
+   {:routes routes
+    :path-prefix "/identity/google-auth"
+    :google-id-token-verifier GoogleIdTokenVerifierComponent
+    :google-client-id (ds/ref [:env :google-client-id])}
+   components))

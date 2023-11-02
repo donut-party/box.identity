@@ -133,15 +133,6 @@
 ;; routes
 ;;---
 
-(def default-route-opts
-  {:group-path "/identity"
-   :signup-handler signup-handler
-   :login-handler login-handler
-   :logout-handler logout-handler
-   :check-reset-password-token-handler check-reset-password-token-handler
-   :reset-password-handler reset-password-handler
-   :create-reset-password-token-handler create-reset-password-token-handler})
-
 (def donut-routes
   [["/signup"
     {:name :donut.endpoint.identity/signup
@@ -164,12 +155,23 @@
     {:name :donut.endpoint.identity/create-reset-password-token
      :post {:handler (ds/local-ref [:create-reset-password-token-handler])}}]])
 
+(def route-group-components
+  "Mostly handlers, plus the prefix for the routes"
+  {:path-prefix "/identity"
+   :routes donut-routes
+   :signup-handler signup-handler
+   :login-handler login-handler
+   :logout-handler logout-handler
+   :check-reset-password-token-handler check-reset-password-token-handler
+   :reset-password-handler reset-password-handler
+   :create-reset-password-token-handler create-reset-password-token-handler})
+
 ;; TODO schema that checks for donut ref, or the realized type
 (def RouteGroupSchema
   [:map
    {:closed true}
-   [:group-path {:optional true} :string]
-   [:group-opts
+   [:path-prefix {:optional true} :string]
+   [:shared-opts
     [:map
      [:send-email :any]
      [:datasource :any]
@@ -181,17 +183,16 @@
    [:reset-password-handler {:optional true} :any]
    [:create-reset-password-token-handler {:optional true} :any]])
 
+(def IdentityRouteGroupSchema
+  [::ds/config
+   [:map
+    [:send-email fn?]
+    [:datasource :any]
+    [:frontend-router :any]]])
 
 ;; TODO validate datasource satisfies? IdentityStore
 (defn identity-route-group
   [& [components]]
   (dsu/validate-with-throw RouteGroupSchema components)
-  (-> default-route-opts
-      (merge {:routes donut-routes} components)
-      (derg/route-group)
-      (assoc-in [:route-group ::ds/pre-start-schema]
-                [::ds/config
-                 [:map
-                  [:send-email fn?]
-                  [:datasource :any]
-                  [:frontend-router :any]]])))
+  (-> (derg/route-group route-group-components components)
+      (assoc-in [:route-group ::ds/pre-start-schema] IdentityRouteGroupSchema)))

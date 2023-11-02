@@ -4,6 +4,7 @@
          metosin/malli                           {:mvn/version "0.11.0"}
          party.donut/email                       {:mvn/version "0.0.11"}
          party.donut/endpoint                    {:mvn/version "0.0.28"}
+         party.donut/frontend                    {:mvn/version "0.0.139"}
          party.donut/hooked                      {:mvn/version "0.0.12"}
          party.donut/sugar                       {:mvn/version "0.0.19"}
          party.donut/system                      {:mvn/version "0.0.214"}}
