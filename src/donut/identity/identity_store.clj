@@ -1,7 +1,10 @@
 (ns donut.identity.identity-store
   (:require
    [buddy.hashers :as buddy-hashers]
-   [nano-id.core :as nano-id]))
+   [donut.dbeasy :as dbe]
+   [donut.dbeasy.next-jdbc :as dben]
+   [nano-id.core :as nano-id]
+   [next.jdbc.sql :as jsql]))
 
 (def DEFAULT-TOKEN-MAX-AGE
   "sixty minutes"
@@ -29,7 +32,31 @@
   (-user-by-email [datasource email])
   (-user-by-reset-password-token [datasource token])
   (-insert-user! [datasource user])
-  (-update-user! [datasource user user-id]))
+  (-update-user! [datasource user]))
+
+(dbe/def-protocol-template
+  IdentityStore
+  :donut.dbeasy.next-jdbc
+
+  (-user-by-email
+   [datasource email]
+   (dben/query-one datasource {:select [:*]
+                               :from   [:user]
+                               :where  [:= :email email]}))
+
+  (-user-by-reset-password-token
+   [datasource token]
+   (dben/query-one datasource {:select [:*]
+                               :from   [:user]
+                               :where  [:= :reset_password_token token]}))
+
+  (-insert-user!
+   [datasource user]
+   (dben/insert! datasource user))
+
+  (-update-user!
+   [datasource user]
+   (jsql/update! datasource :user user (select-keys user [:user/id]))))
 
 (defn user-by-credentials
   [datasource {:keys [:user/password :user/email]}]
@@ -49,21 +76,21 @@
   [datasource user]
   (let [token (nano-id/nano-id 10)]
     (-update-user! datasource
-                   {:user/reset_password_token token
-                    :user/reset_password_token_created_at (current-time-seconds)}
-                   (:user/id user))
+                   {:user/id                              (:user/id user)
+                    :user/reset_password_token            token
+                    :user/reset_password_token_created_at (current-time-seconds)})
     token))
 
 (defn reset-password!
-  [datasource {:keys [token token-max-age :user/password] :as password-reset}]
+  [datasource {:keys [token token-max-age :user/password] :as _password-reset}]
   (when-let [user (-user-by-reset-password-token datasource token)]
     (if (token-expired? user token-max-age)
       :expired
       (-update-user! datasource
-                     {:user/password_hash                   (buddy-hashers/encrypt password)
+                     {:user/id                              (:user/id user)
+                      :user/password_hash                   (buddy-hashers/encrypt password)
                       :user/password_reset_token            nil
-                      :user/password_reset_token_created_at nil}
-                     (:user/id user)))))
+                      :user/password_reset_token_created_at nil}))))
 
 (defn valid-token?
   [datasource token token-max-age]

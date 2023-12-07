@@ -1,7 +1,10 @@
 {:paths ["src"]
- :deps  {com.google.api-client/google-api-client {:mvn/version "2.2.0"}
-         org.clojure/clojure                     {:mvn/version "1.10.3"}
+ :deps  {buddy/buddy-hashers                     {:mvn/version "1.8.158"}
+         com.google.api-client/google-api-client {:mvn/version "2.2.0"}
          metosin/malli                           {:mvn/version "0.11.0"}
+         nano-id/nano-id                         {:mvn/version "1.0.0"}
+         org.clojure/clojure                     {:mvn/version "1.10.3"}
+         party.donut/dbeasy                      {:local/root "../dbeasy"}
          party.donut/email                       {:mvn/version "0.0.11"}
          party.donut/endpoint                    {:mvn/version "0.0.28"}
          party.donut/frontend                    {:mvn/version "0.0.139"}
