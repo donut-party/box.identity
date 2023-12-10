@@ -1,7 +1,7 @@
 (ns donut.identity.identity-store
   (:require
    [buddy.hashers :as buddy-hashers]
-   [donut.dbeasy :as dbe]
+   [donut.protocol-template :as dbpt]
    [donut.dbeasy.next-jdbc :as dben]
    [nano-id.core :as nano-id]
    [next.jdbc.sql :as jsql]))
@@ -34,7 +34,7 @@
   (-insert-user! [datasource user])
   (-update-user! [datasource user]))
 
-(dbe/def-protocol-template
+(dbpt/def-protocol-template
   IdentityStore
   :donut.dbeasy.next-jdbc
 

@@ -1,12 +1,14 @@
-(ns donut.identity.frontend-components
+(ns donut.identity.frontend
   (:require
    [donut.frontend.auth.flow :as daf]
    [donut.frontend.core.utils :as dcu]
    [donut.frontend.form.components :as dfc]
    [donut.frontend.form.feedback :as dffk]
    [donut.frontend.form.flow :as dff]
+   [donut.frontend.routes :as dfr]
    [donut.frontend.nav.components :as dnc]
    [donut.frontend.nav.flow :as dnf]
+   [donut.frontend.sync.flow :as dsf]
    [re-frame.core :as rf]))
 
 
@@ -83,3 +85,21 @@
          [:input {:type  "submit"
                   :class "primary ready"
                   :value "reset password"}]]]))])
+
+
+(dfr/defroutes routes
+  [["/login"
+    {:name       :login
+     :components {:main [login-form]}}]
+   ["/forgot-password"
+    {:name       :forgot-password
+     :components {:main [forgot-password-form]}}]
+   ["/reset-password/{user/reset_password_token}"
+    {:name       :reset-password
+     :components {:main [reset-password-form]}
+     :lifecycle  {:enter (fn [_old-route _new-route params]
+                           [[::daf/clear-reset-password-token-check]
+                            [::dsf/get
+                             :donut.endpoint.identity/reset-password-token
+                             {:route-params (:params params)
+                              :on           {:fail [::daf/reset-password-token-check-failed]}}]])}}]])
