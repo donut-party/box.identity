@@ -1,13 +1,13 @@
-(ns donut.identity.frontend
+(ns donut.box.identity.frontend
   (:require
    [donut.frontend.auth.flow :as daf]
    [donut.frontend.core.utils :as dcu]
    [donut.frontend.form.components :as dfc]
    [donut.frontend.form.feedback :as dffk]
    [donut.frontend.form.flow :as dff]
-   [donut.frontend.routes :as dfr]
    [donut.frontend.nav.components :as dnc]
    [donut.frontend.nav.flow :as dnf]
+   [donut.frontend.routes :as dfr]
    [donut.frontend.sync.flow :as dsf]
    [re-frame.core :as rf]))
 
@@ -32,7 +32,7 @@
 
 (defn login-form
   []
-  [:div.donut.identity.login
+  [:div.donut.box.identity.login
    [:h1 "Login"]
    (dfc/with-form [:post :donut.endpoint.identity/login]
      {:donut.form/feedback-fn feedback-fn}
@@ -52,7 +52,7 @@
 
 (defn forgot-password-form
   []
-  [:div.donut.identity.forgot-password
+  [:div.donut.box.identity.forgot-password
    [:h1 "Forgot Password"]
    (dfc/with-form [:post :donut.endpoint.identity/create-reset-password-token]
      {:donut.form/feedback-fn feedback-fn}

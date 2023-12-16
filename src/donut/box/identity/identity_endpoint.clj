@@ -1,10 +1,10 @@
-(ns donut.identity.identity-endpoint
+(ns donut.box.identity.identity-endpoint
   (:require
+   [donut.box.identity.identity-store :as diis]
    [donut.email :as de]
    [donut.endpoint.response :as der]
    [donut.endpoint.route-group :as derg]
    [donut.hooked :as hooked]
-   [donut.identity.identity-store :as diis]
    [donut.sugar.utils :as dsu]
    [donut.system :as ds]
    [reitit.core :as r]))
@@ -95,6 +95,7 @@
 (defn login-handler
   [{{:keys [datasource]} :dependencies
     :keys [all-params]}]
+  (prn "DATASOURCE HELLO" datasource)
   (let [user (diis/user-by-credentials datasource all-params)]
     (if user
       (auth-success-response user)

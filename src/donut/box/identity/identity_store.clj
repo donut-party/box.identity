@@ -1,8 +1,8 @@
-(ns donut.identity.identity-store
+(ns donut.box.identity.identity-store
   (:require
    [buddy.hashers :as buddy-hashers]
-   [donut.protocol-template :as dbpt]
    [donut.dbeasy.next-jdbc :as dben]
+   [donut.protocol-template :as dbpt]
    [nano-id.core :as nano-id]
    [next.jdbc.sql :as jsql]))
 

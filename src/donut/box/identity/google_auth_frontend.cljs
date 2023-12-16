@@ -1,4 +1,4 @@
-(ns donut.identity.google-auth-frontend
+(ns donut.box.identity.google-auth-frontend
   "handlers, subs, components for google auth
 
   https://developers.google.com/identity/sign-in/web/sign-in

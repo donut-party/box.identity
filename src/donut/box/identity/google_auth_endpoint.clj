@@ -1,9 +1,9 @@
-(ns donut.identity.google-auth-endpoint
+(ns donut.box.identity.google-auth-endpoint
   (:require
    [clojure.walk :as walk]
+   [donut.box.identity.identity-endpoint :as diie]
+   [donut.box.identity.identity-store :as diis]
    [donut.endpoint.route-group :as derg]
-   [donut.identity.identity-endpoint :as diie]
-   [donut.identity.identity-store :as diis]
    [donut.system :as ds])
   (:import
    [com.google.api.client.googleapis.auth.oauth2

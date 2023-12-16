@@ -4,6 +4,7 @@
          metosin/malli                           {:mvn/version "0.11.0"}
          nano-id/nano-id                         {:mvn/version "1.0.0"}
          org.clojure/clojure                     {:mvn/version "1.10.3"}
+         party.donut/dbeasy.next-jdbc            {:mvn/version "0.0.11"}
          party.donut/email                       {:mvn/version "0.0.11"}
          party.donut/endpoint                    {:mvn/version "0.0.29"}
          party.donut/frontend                    {:mvn/version "0.0.152"}
@@ -29,6 +30,6 @@
    :exec-fn     cljs-test-runner.main/-main}
 
   :build
-  {:deps       {io.github.seancorfield/build-clj
-                {:git/tag "v0.6.6" :git/sha "171d5f1"}}
+  {:deps       {io.github.clojure/tools.build {:mvn/version "0.9.6"}
+                slipset/deps-deploy           {:mvn/version "0.2.1"}}
    :ns-default build}}}
