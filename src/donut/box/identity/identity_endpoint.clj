@@ -56,10 +56,10 @@
   [{{:keys [datasource]} :dependencies
     :keys [all-params]
     :as req}]
-  (if-let [errors (dsu/feedback (UserSignupSchema datasource) all-params)]
+  (if-let [response (der/errors-response (UserSignupSchema datasource) all-params)]
     (do
-      (hooked/call ::signup-handler.validation-errors (assoc req :errors errors))
-      (der/errors-response errors all-params))
+      (hooked/call ::signup-handler.validation-errors (assoc req :errors (:feedback response)))
+      response)
     (let [user (diis/user-signup! datasource all-params)]
       (hooked/call ::signup-handler.signup-success (assoc req :user user))
       (auth-success-response user))))

@@ -1,5 +1,5 @@
 (ns build
-  "donut/dbeasy's build script. Builds on https://github.com/seancorfield/honeysql/blob/develop/build.clj
+  "build script. Builds on https://github.com/seancorfield/honeysql/blob/develop/build.clj
 
   Run tests:
   clojure -X:test
@@ -18,7 +18,7 @@
 (def basis (b/create-basis {:project "deps.edn"}))
 
 (defn- pom-template [version]
-  [[:description "helper functions for db interactions"]
+  [[:description "full stack auth"]
    [:url "https://github.com/donut-power/box.identity"]
    [:licenses
     [:license
