@@ -60,11 +60,11 @@
 
 (defn user-by-credentials
   [datasource {:keys [:user/password :user/email]}]
-  (let [user (-user-by-email datasource email)]
-    (and user
-         (not-empty password)
-         (:valid (buddy-hashers/verify password (:user/password_hash user)))
-         user)))
+  (when-let [user (-user-by-email datasource email)]
+    (and
+     (not-empty password)
+     (:valid (buddy-hashers/verify password (:user/password_hash user)))
+     user)))
 
 (defn user-signup!
   [datasource user]

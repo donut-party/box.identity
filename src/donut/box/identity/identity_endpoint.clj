@@ -95,13 +95,11 @@
 (defn login-handler
   [{{:keys [datasource]} :dependencies
     :keys [all-params]}]
-  (prn "DATASOURCE HELLO" datasource)
-  (let [user (diis/user-by-credentials datasource all-params)]
-    (if user
-      (auth-success-response user)
-      {:status  401
-       :body    [[:errors {:form ["Could not log you in with that email and password"]}]]
-       :session {:identity nil}})))
+  (if-let [user (diis/user-by-credentials datasource all-params)]
+    (auth-success-response user)
+    {:status  401
+     :body    [[:errors {:form ["Could not log you in with that email and password"]}]]
+     :session {:identity nil}}))
 
 (defn logout-handler
   [_]
