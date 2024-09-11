@@ -64,7 +64,6 @@
                 :class "primary ready"
                 :value "send reset email"}]]])])
 
-
 (defn reset-password-form
   []
   [:div
@@ -94,7 +93,7 @@
    ["/forgot-password"
     {:name       :forgot-password
      :components {:main [forgot-password-form]}}]
-   ["/reset-password/{user/reset_password_token}"
+   ["/reset-password/{user/reset-password-token}"
     {:name       :reset-password
      :components {:main [reset-password-form]}
      :lifecycle  {:enter (fn [_old-route _new-route params]

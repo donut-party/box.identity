@@ -21,7 +21,7 @@
 (defn- token-expired?
   [user token-max-age]
   (> (- (current-time-seconds)
-        (:user/password_reset_token_created_at user))
+        (:user/password-reset-token-created-at user))
      token-max-age))
 
 ;;---
@@ -48,7 +48,7 @@
    [datasource token]
    (dben/query-one datasource {:select [:*]
                                :from   [:user]
-                               :where  [:= :reset_password_token token]}))
+                               :where  [:= :reset-password-token token]}))
 
   (-insert-user!
    [datasource user]
@@ -61,24 +61,25 @@
 (defn user-by-credentials
   [datasource {:keys [:user/password :user/email]}]
   (when-let [user (-user-by-email datasource email)]
+    (prn "user" user)
     (and
      (not-empty password)
-     (:valid (buddy-hashers/verify password (:user/password_hash user)))
+     (:valid (buddy-hashers/verify password (:user/password-hash user)))
      user)))
 
 (defn user-signup!
   [datasource user]
   (-insert-user! datasource (-> user
                                 (dissoc :user/password)
-                                (assoc :user/password_hash (buddy-hashers/encrypt (:user/password user))))))
+                                (assoc :user/password-hash (buddy-hashers/encrypt (:user/password user))))))
 
 (defn create-reset-password-token!
   [datasource user]
   (let [token (nano-id/nano-id 10)]
     (-update-user! datasource
                    {:user/id                              (:user/id user)
-                    :user/reset_password_token            token
-                    :user/reset_password_token_created_at (current-time-seconds)})
+                    :user/reset-password-token            token
+                    :user/reset-password-token_created_at (current-time-seconds)})
     token))
 
 (defn reset-password!
@@ -88,9 +89,9 @@
       :expired
       (-update-user! datasource
                      {:user/id                              (:user/id user)
-                      :user/password_hash                   (buddy-hashers/encrypt password)
-                      :user/password_reset_token            nil
-                      :user/password_reset_token_created_at nil}))))
+                      :user/password-hash                   (buddy-hashers/encrypt password)
+                      :user/password-reset-token            nil
+                      :user/password-reset-token-created-at nil}))))
 
 (defn valid-token?
   [datasource token token-max-age]
