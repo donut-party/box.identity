@@ -85,7 +85,6 @@
                   :class "primary ready"
                   :value "reset password"}]]]))])
 
-
 (dfr/defroutes routes
   [["/login"
     {:name       :login
@@ -102,3 +101,7 @@
                              :donut.endpoint.identity/reset-password-token
                              {:route-params (:params params)
                               :on           {:fail [::daf/reset-password-token-check-failed]}}]])}}]])
+
+(rf/reg-sub ::auth-identity
+  (fn [db]
+    (get-in db [:donut :auth :identity])))

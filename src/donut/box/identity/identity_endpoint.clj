@@ -9,6 +9,12 @@
    [donut.system :as ds]
    [reitit.core :as r]))
 
+(defmulti session-identity (fn [user] (:user/type user)))
+(defmethod session-identity
+  :default
+  [user]
+  (select-keys user [:user/email]))
+
 ;;---
 ;; hooks
 ;;---
@@ -25,10 +31,6 @@
 ;;---
 ;; ring
 ;;---
-
-(defn session-identity
-  [user]
-  (select-keys user [:user/email]))
 
 (defn auth-success-response
   [user]
