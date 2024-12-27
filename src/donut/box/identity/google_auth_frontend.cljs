@@ -56,20 +56,25 @@
 ;; UI components
 ;;---
 
+(defn signin-button-reactive
+  []
+  (r/create-class
+   {:reagent-render
+    (fn [] [:div {:id button-id}])
+    :component-did-mount
+    (fn [_] (rf/dispatch [::google-auth-component-loaded :button]))}))
+
+(defn signin-fail-message
+  []
+  (when @(rf/subscribe [::validate-token-failed?])
+    [:div "There was a problem signing in. Please try again."]))
+
 (defn signin-button
   "Google signin button."
   []
-  (let [failed? (rf/subscribe [::validate-token-failed?])]
-    (r/create-class
-     {:reagent-render
-      (fn []
-        [:div
-         (when @failed?
-           [:div "There was a problem signing in. Please try again."])
-         [:div {:id button-id}]])
-
-      :component-did-mount
-      (fn [_] (rf/dispatch [::google-auth-component-loaded :button]))})))
+  [:div
+   [signin-fail-message]
+   [signin-button-reactive]])
 
 ;;---
 ;; system components
@@ -94,10 +99,8 @@
                :callback  #(dispatch-validate-token % (:validate-token-dispatch-opts config))}))
 
     ;; TODO logic for one-tap prompt
-    #_
-    ((dcu/go-get (gis-api) ["prompt"]))
+    #_((dcu/go-get (gis-api) ["prompt"]))
     (rf/dispatch [::google-auth-component-loaded :script])))
-
 
 (def GoogleAuthComponent
   #::ds{:start (fn [{:keys [::ds/config]}]

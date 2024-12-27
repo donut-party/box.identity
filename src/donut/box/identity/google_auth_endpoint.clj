@@ -71,7 +71,7 @@
             verified-token->user
             datasource]} :dependencies
     :keys [all-params]}]
-  {:pre [google-id-token-verifier google-client-id datasource]}
+  {:pre [google-id-token-verifier google-client-id datasource verified-token->user]}
   (if-let [verified-token (verify-google-token google-id-token-verifier
                                                google-client-id
                                                (:credential all-params))]
