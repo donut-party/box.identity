@@ -5,37 +5,66 @@
   "
   (:require
    [clojure.walk :as walk]
+   [donut.box.identity.frontend :as dbif]
    [donut.frontend.core.utils :as dcu]
    [donut.frontend.nav.flow :as dnf]
    [donut.frontend.sync.flow :as dsf]
    [donut.system :as ds]
    [re-frame.core :as rf]
-   [reagent.core :as r]
-   [reagent.dom :as rdom]))
+   [reagent.core :as r]))
+
+(def button-id "donut-google-auth-button")
+
+(defn gis-api
+  []
+  (dcu/go-get js/window ["google" "accounts" "id"]))
+
+(def google-auth-path [:donut :auth :google-auth])
+
+(rf/reg-fx ::render-button
+  (fn [render?]
+    (when render?
+      (let [render-button (dcu/go-get (gis-api) ["renderButton"])]
+        (render-button (dcu/el-by-id button-id) #js{:theme "outline"})))))
+
+;; handle script and button loading async
+(rf/reg-event-fx ::google-auth-component-loaded
+  [rf/trim-v]
+  (fn [{:keys [db]} [component]]
+    (let [path   (conj google-auth-path :loaded-components)
+          new-db (update-in db path (fnil conj #{}) component)]
+      {:db             new-db
+       ::render-button (= #{:script :button} (get-in new-db path))})))
+
+(rf/reg-sub :ga-auth-workflow
+  (fn [db] (:ga-auth-workflow db)))
 
 (defn goog-auth-callback
+  "Called when auth is successful"
   [args]
   (rf/dispatch [::dsf/post
                 :donut.endpoint.identity.google-auth/validate-token
                 {:params (-> (js->clj args)
                              (walk/keywordize-keys))}]))
 
+(defn goog-auth-initialize
+  "Called after the gsi client is loaded, initializes and configures it"
+  [config]
+  (let [goog-initialize (dcu/go-get (gis-api) ["initialize"])]
+    (goog-initialize
+     (clj->js {:client_id (:google-signin-client-id config)
+               :callback  goog-auth-callback}))
+    (rf/dispatch [::google-auth-component-loaded :script])))
+
 (def GoogleAuthComponent
   #::ds{:start (fn [{:keys [::ds/config]}]
-                 ;; Loads the "auth2" gapi library, passing in a callback that configures the lib
-                 ;; with our client id. The client id is used internall by gapi to make auth requests.
-                 (rf/reg-fx ::init-ga-signin
-                   (fn [_]
-                     (js/gapi.load "auth2" #(js/gapi.auth2.init #js{:client_id (:google-signin-client-id config)}))))
-
-                 (dcu/load-script
-                  {:url     "https://accounts.google.com/gsi/client"
-                   :async   true
-                   :on-load (fn []
-                              (let [goog-initialize (dcu/go-get js/window ["google" "accounts" "id" "initialize"])]
-                                (goog-initialize
-                                 (clj->js {:client_id (:google-signin-client-id config)
-                                           :callback  goog-auth-callback}))))}))})
+                 (js/console.log "loading script")
+                 (if (gis-api)
+                   (rf/dispatch [::google-auth-component-loaded :script])
+                   (dcu/load-script
+                    {:url     "https://accounts.google.com/gsi/client"
+                     :async   true
+                     :on-load (fn [] (goog-auth-initialize config))})))})
 
 ;;---
 ;; init google auth
@@ -49,6 +78,7 @@
   "Callback called when GA js lib loads. It eventually lets us know it's safe t
   attempt to render the signin button."
   []
+  (prn "exported")
   (rf/dispatch [::init-google-auth]))
 
 ;; capture whether or not the gapi lib has loaded so that we can
@@ -63,6 +93,7 @@
 (rf/reg-event-fx ::init-google-auth
   [(rf/inject-cofx ::gapi-signin-state) rf/trim-v]
   (fn [{:keys [db gapi-signin-state]} _]
+    (prn "init google auth" gapi-signin-state)
     (cond-> {:db              (assoc-in db [:ga-auth-workflow :lib-state] gapi-signin-state)
              ::init-ga-signin true}
       (get-in db [:ga-auth-workflow :requires-signout?]) (assoc :dispatch [::ga-signout]))))
@@ -98,12 +129,12 @@
 
 (defn can-validate-ga?
   [{:keys [db]}]
-  (let [{:keys [init-state current-user ga-auth-workflow]} db
+  (let [{:keys [init-state ga-auth-workflow]} db
         {:keys [validation-state lib-state ga-response]} ga-auth-workflow]
     (and (= :init-finished init-state)
          (not= ::validated validation-state)
          (not= ::uninitialized lib-state)
-         (empty? current-user)
+         (empty? (dbif/auth-identity db))
          (not-empty ga-response))))
 
 (defn attempt-ga-server-validation
@@ -196,22 +227,17 @@
 
 (defn signin-button
   "Google signin button."
-  [success-handler]
+  []
   (r/create-class
    {:reagent-render
-    (fn [] [:div.ga-signin-button])
+    (fn [] [:div {:id button-id} "button"])
 
     :component-did-mount
-    (fn [this]
-      (.render js/gapi.signin2
-               (rdom/dom-node this)
-               #js{:onsuccess (on-signin-fn success-handler)
-                   :width     "auto"
-                   :longtitle true}))}))
+    (fn [_] (rf/dispatch [::google-auth-component-loaded :button]))}))
 
 (defn logout-button
   []
-  (let [{:keys [:user/email]} @(rf/subscribe [:current-user])]
+  (let [{:keys [:user/email]} @(rf/subscribe [:donut.box.identity.frontend/auth-identity])]
     [:div.ga-button
      [:div "Signed in as " email
       [:a.text-white.ml1 {:href     "#"
@@ -236,7 +262,7 @@
 (defn create-account-button
   [& [success-event]]
   (let [{:keys [validation-state lib-state errors]} @(rf/subscribe [:ga-auth-workflow])
-        current-user                                @(rf/subscribe [:current-user])
+        current-user                                @(rf/subscribe [:donut.box.identity.frontend/auth-identity])
         success-event                               (or success-event [:steps/step-1-complete])]
     (if current-user
       [logout-button]

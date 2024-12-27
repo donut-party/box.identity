@@ -102,6 +102,10 @@
                              {:route-params (:params params)
                               :on           {:fail [::daf/reset-password-token-check-failed]}}]])}}]])
 
+(defn auth-identity
+  [db]
+  (get-in db [:donut :auth :identity]))
+
 (rf/reg-sub ::auth-identity
   (fn [db]
-    (get-in db [:donut :auth :identity])))
+    (auth-identity db)))
