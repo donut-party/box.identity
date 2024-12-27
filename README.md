@@ -1,3 +1,5 @@
-[![Clojars Project](https://img.shields.io/clojars/v/party.donut/datastore.svg)](https://clojars.org/party.donut/datastore)
+# Identity Box
 
-# datastore
+## Google Auth Flow
+
+1. Component loads the JS

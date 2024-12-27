@@ -19,7 +19,7 @@
   []
   (dcu/go-get js/window ["google" "accounts" "id"]))
 
-(def google-auth-path [:donut :auth :google-auth])
+(def google-auth-path [:donut :auth-workflow :google-auth])
 
 (rf/reg-fx ::render-button
   (fn [render?]
@@ -58,7 +58,6 @@
 
 (def GoogleAuthComponent
   #::ds{:start (fn [{:keys [::ds/config]}]
-                 (js/console.log "loading script")
                  (if (gis-api)
                    (rf/dispatch [::google-auth-component-loaded :script])
                    (dcu/load-script
@@ -230,7 +229,7 @@
   []
   (r/create-class
    {:reagent-render
-    (fn [] [:div {:id button-id} "button"])
+    (fn [] [:div {:id button-id}])
 
     :component-did-mount
     (fn [_] (rf/dispatch [::google-auth-component-loaded :button]))}))
