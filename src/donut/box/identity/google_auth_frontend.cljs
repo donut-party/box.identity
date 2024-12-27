@@ -86,8 +86,8 @@
   (rf/dispatch [::dsf/post
                 :donut.endpoint.identity.google-auth/validate-token
                 (merge {:params (-> google-auth-token js->clj walk/keywordize-keys)
-                        :on {:success [[::dnf/navigate-route :home]]
-                             :fail [[::validate-token-failed]]}}
+                        :on     {:success [[::dnf/navigate-route :home]]
+                                 :fail    [[::validate-token-failed]]}}
                        dispatch-opts)]))
 
 (defn google-auth-initialize
