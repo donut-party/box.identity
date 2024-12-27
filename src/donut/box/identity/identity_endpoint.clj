@@ -13,7 +13,7 @@
 (defmethod session-identity
   :default
   [user]
-  (select-keys user [:user/email]))
+  (select-keys user [:user/email :user/name]))
 
 ;;---
 ;; hooks

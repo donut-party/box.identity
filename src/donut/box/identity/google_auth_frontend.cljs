@@ -54,6 +54,10 @@
     (goog-initialize
      (clj->js {:client_id (:google-signin-client-id config)
                :callback  goog-auth-callback}))
+
+    ;; TODO logic for one-tap prompt
+    #_
+    ((dcu/go-get (gis-api) ["prompt"]))
     (rf/dispatch [::google-auth-component-loaded :script])))
 
 (def GoogleAuthComponent
@@ -77,7 +81,6 @@
   "Callback called when GA js lib loads. It eventually lets us know it's safe t
   attempt to render the signin button."
   []
-  (prn "exported")
   (rf/dispatch [::init-google-auth]))
 
 ;; capture whether or not the gapi lib has loaded so that we can

@@ -36,37 +36,48 @@
                                (.verify token)
                                .getPayload
                                (#(into {} %))
-                               walk/keywordize-keys
-                               (select-keys [:aud :email :email_verified :exp :iat :iss]))]
+                               walk/keywordize-keys)]
     (and (= google-client-id (:aud verified-token))
          (#{"https://accounts.google.com" "accounts.google.com"}
           (:iss verified-token))
          verified-token)))
 
 
-(defn- identity-provider-authenticated! [datasource email]
-  [datasource email]
-  (or (diis/-user-by-email datasource email)
-      (diis/-insert-user! datasource {:user/email email})))
+(defn- identity-provider-authenticated! [datasource verified-token user]
+  [datasource verified-token user]
+  (or (diis/-user-by-email datasource (:email verified-token))
+      (diis/-insert-user! datasource user)))
 
 (defn handle-verify-token-success
-  [datasource email]
+  [datasource verified-token user]
   (-> datasource
-      (identity-provider-authenticated! email)
+      (identity-provider-authenticated! verified-token user)
       diie/auth-success-response))
 
 (defn handle-verify-token-failure
   []
   {:status 500})
 
+(defn default-verified-token->user
+  [{:keys [email name given_name family_name]}]
+  {:user/email       email
+   :user/name        name
+   :user/given-name  given_name
+   :user/family-name family_name})
+
 (defn handle-verify-token
-  [{{:keys [google-id-token-verifier google-client-id datasource]} :dependencies
+  [{{:keys [google-id-token-verifier
+            google-client-id
+            verified-token->user
+            datasource]} :dependencies
     :keys [all-params]}]
   {:pre [google-id-token-verifier google-client-id datasource]}
   (if-let [verified-token (verify-google-token google-id-token-verifier
                                                google-client-id
                                                (:credential all-params))]
-    (handle-verify-token-success datasource (:email verified-token))
+    (handle-verify-token-success datasource
+                                 verified-token
+                                 (verified-token->user verified-token))
     (handle-verify-token-failure)))
 
 (def routes
@@ -74,13 +85,15 @@
     {:name :donut.endpoint.identity.google-auth/validate-token
      :post {:handler handle-verify-token}
      :google-id-token-verifier (ds/local-ref [:google-id-token-verifier])
-     :google-client-id (ds/local-ref [:google-client-id])}]])
+     :google-client-id (ds/local-ref [:google-client-id])
+     :verified-token->user (ds/local-ref [:verified-token->user])}]])
 
 (defn google-auth-route-group
   [& [components]]
   (derg/route-group
-   {:routes routes
-    :path-prefix "/identity/google-auth"
+   {:routes                   routes
+    :path-prefix              "/identity/google-auth"
     :google-id-token-verifier GoogleIdTokenVerifierComponent
-    :google-client-id (ds/ref [:env :google-client-id])}
+    :google-client-id         (ds/ref [:env :google-client-id])
+    :verified-token->user     default-verified-token->user}
    components))
