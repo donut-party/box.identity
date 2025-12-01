@@ -2,6 +2,7 @@
   (:require
    [donut.frontend.auth.flow :as daf]
    [donut.frontend.core.utils :as dcu]
+   [donut.frontend.events :as dfe]
    [donut.frontend.form.components :as dfc]
    [donut.frontend.form.feedback :as dffk]
    [donut.frontend.form.flow :as dff]
@@ -27,17 +28,19 @@
    dffk/stored-error-feedback))
 
 (def submit-opts
-  {:on {:success [::dff/clear-form :$ctx]
-        :fail    [::dff/clear :$ctx [:buffer :input-events]]}})
+  {::dfe/on {:success [::dff/clear-form]
+             :fail    [::dff/clear {:form-keys [:buffer :input-events]}]}})
 
 (defn login-form
   []
   [:div.donut.box.identity.login
    [:h1 "Login"]
-   (dfc/with-form [:post :donut.endpoint.identity/login]
+   (dfc/with-form {:donut.form/key ::login}
      {:donut.form/feedback-fn feedback-fn}
      [:form {:on-submit
-             (dcu/prevent-default #(*submit submit-opts))}
+             (dcu/prevent-default #(*sync-form (merge {:request-method :post
+                                                       :route-name     :donut.endpoint.identity/login}
+                                                      submit-opts)))}
       [:div
        [:h3 "Log in"]
        [*field :email :user/email {:required true :placeholder "mary@gmail.com"}]
@@ -54,10 +57,12 @@
   []
   [:div.donut.box.identity.forgot-password
    [:h1 "Forgot Password"]
-   (dfc/with-form [:post :donut.endpoint.identity/create-reset-password-token]
-     {:donut.form/feedback-fn feedback-fn}
+   (dfc/with-form {:donut.form/key ::login
+                   :donut.form/feedback-fn feedback-fn}
      [:form {:on-submit
-             (dcu/prevent-default #(*submit submit-opts))}
+             (dcu/prevent-default #(*sync-form (merge {:request-method :post
+                                                       :route-name     :donut.endpoint.identity/create-reset-password-token}
+                                                      submit-opts)))}
       [:div
        [*field :email :user/email {:required true :placeholder "mary@gmail.com"}]
        [:input {:type  "submit"
@@ -73,7 +78,7 @@
        {:donut.form/initial-state {:buffer @(rf/subscribe [::dnf/params])}
         :donut.form/feedback-fn feedback-fn}
        [:form {:on-submit
-               (dcu/prevent-default #(*submit submit-opts))}
+               (dcu/prevent-default #(*sync-form submit-opts))}
         (when invalid?
           [:div "Your password reset request has expired. "
            [dnc/simple-route-link {:route-name :forgot-password}
