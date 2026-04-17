@@ -4,6 +4,7 @@
   "
   (:require
    [clojure.walk :as walk]
+   [donut.compose :as dc]
    [donut.frontend.core.utils :as dcu]
    [donut.frontend.events :as dfe]
    [donut.frontend.nav.flow :as dnf]
@@ -83,13 +84,14 @@
 
 (defn dispatch-validate-token
   "Called when user authenticates with google"
-  [google-auth-token dispatch-opts]
-  (rf/dispatch [::dsf/post
-                {::dsf/req (merge {:route-name :donut.endpoint.identity.google-auth/validate-token
-                                   :params     (-> google-auth-token js->clj walk/keywordize-keys)}
-                                  dispatch-opts)
-                 ::dfe/on  {:success [[::dnf/navigate-route {:route-name :home}]]
-                            :fail    [[::validate-token-failed]]}}]))
+  [google-auth-token opts]
+  (let [composable  (dc/composable opts)
+        destination (composable :success-destination :home)]
+    (rf/dispatch [::dsf/post
+                  {::dsf/req (composable ::dsf/req {:route-name :donut.endpoint.identity.google-auth/validate-token
+                                                    :params     (-> google-auth-token js->clj walk/keywordize-keys)})
+                   ::dfe/on  (composable ::dfe/on {:success [[::dnf/navigate-route {:route-name destination}]]
+                                                   :fail    [[::validate-token-failed]]})}])))
 
 (defn google-auth-initialize
   "Called after the gsi client is loaded; initializes and configures it"
