@@ -90,7 +90,9 @@
     (rf/dispatch [::dsf/post
                   {::dsf/req (composable ::dsf/req {:route-name :donut.endpoint.identity.google-auth/verify-token
                                                     :params     (-> google-auth-token js->clj walk/keywordize-keys)})
-                   ::dfe/on  (composable ::dfe/on {:success [[::dnf/navigate-route {:route-name destination}]]
+                   ;; TODO example of tricky composition
+                   ::dfe/on  (composable ::dfe/on {:success [[::dsf/default-sync-success]
+                                                             [::dnf/navigate-route {:route-name destination}]]
                                                    :fail    [[::verify-token-failed]]})}])))
 
 (defn google-auth-initialize

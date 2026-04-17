@@ -43,7 +43,7 @@
          verified-token)))
 
 
-(defn- identity-provider-authenticated! [datasource verified-token user]
+(defn- identity-provider-authenticated!
   [datasource verified-token user]
   (or (diis/-user-by-email datasource (:email verified-token))
       (diis/-insert-user! datasource user)))
