@@ -5,6 +5,7 @@
   (:require
    [clojure.walk :as walk]
    [donut.frontend.core.utils :as dcu]
+   [donut.frontend.events :as dfe]
    [donut.frontend.nav.flow :as dnf]
    [donut.frontend.sync.flow :as dsf]
    [donut.system :as ds]
@@ -57,10 +58,10 @@
 ;;---
 
 (defn signin-button-reactive
-  []
+  [opts]
   (r/create-class
    {:reagent-render
-    (fn [] [:div {:id button-id}])
+    (fn [] [:div (merge {:id button-id} opts)])
     :component-did-mount
     (fn [_] (rf/dispatch [::google-auth-component-loaded :button]))}))
 
@@ -71,10 +72,10 @@
 
 (defn signin-button
   "Google signin button."
-  []
+  [opts]
   [:div
    [signin-fail-message]
-   [signin-button-reactive]])
+   [signin-button-reactive opts]])
 
 ;;---
 ;; system components
@@ -84,11 +85,11 @@
   "Called when user authenticates with google"
   [google-auth-token dispatch-opts]
   (rf/dispatch [::dsf/post
-                :donut.endpoint.identity.google-auth/validate-token
-                (merge {:params (-> google-auth-token js->clj walk/keywordize-keys)
-                        :on     {:success [[::dnf/navigate-route :home]]
-                                 :fail    [[::validate-token-failed]]}}
-                       dispatch-opts)]))
+                {::dsf/req (merge {:route-name :donut.endpoint.identity.google-auth/validate-token
+                                   :params     (-> google-auth-token js->clj walk/keywordize-keys)}
+                                  dispatch-opts)
+                 ::dfe/on  {:success [[::dnf/navigate-route {:route-name :home}]]
+                            :fail    [[::validate-token-failed]]}}]))
 
 (defn google-auth-initialize
   "Called after the gsi client is loaded; initializes and configures it"

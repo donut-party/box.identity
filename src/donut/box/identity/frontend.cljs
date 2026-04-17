@@ -36,12 +36,12 @@
   [:div.donut.box.identity.login
    [:h1 "Login"]
    (dfc/with-form
-     {:donut.form/key         ::login
-      :donut.form/feedback-fn feedback-fn
-      :donut.sync/request     submit-opts}
+     {::dff/form-key    ::login
+      ::dff/feedback-fn feedback-fn
+      ::dsf/req         submit-opts}
      [:form {:on-submit
-             (dcu/prevent-default #(*sync-form {:donut.sync/request {:method     :post
-                                                                     :route-name :donut.endpoint.identity/login}}))}
+             (dcu/prevent-default #(*sync-form {::dsf/req {:method     :post
+                                                           :route-name :donut.endpoint.identity/login}}))}
       [:div
        [:h3 "Log in"]
        [*field {:type                  :email
