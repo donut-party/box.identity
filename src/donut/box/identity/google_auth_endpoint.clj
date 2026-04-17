@@ -82,7 +82,7 @@
 
 (def routes
   [["/verify-token"
-    {:name :donut.endpoint.identity.google-auth/validate-token
+    {:name :donut.endpoint.identity.google-auth/verify-token
      :post {:handler handle-verify-token}
      :google-id-token-verifier (ds/local-ref [:google-id-token-verifier])
      :google-client-id (ds/local-ref [:google-client-id])

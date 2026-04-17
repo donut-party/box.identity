@@ -21,19 +21,19 @@
 
 (def google-auth-path
   [:donut :auth-workflow :google-auth])
-(def validate-token-failed?-path
-  (conj google-auth-path :validate-token-failed?))
+(def verify-token-failed?-path
+  (conj google-auth-path :verify-token-failed?))
 (def loaded-components-path
   (conj google-auth-path :loaded-components))
 
-(rf/reg-event-db ::validate-token-failed
+(rf/reg-event-db ::verify-token-failed
   [rf/trim-v]
   (fn [db]
-    (assoc-in db validate-token-failed?-path true)))
+    (assoc-in db verify-token-failed?-path true)))
 
-(rf/reg-sub ::validate-token-failed?
+(rf/reg-sub ::verify-token-failed?
   (fn [db]
-    (get-in db validate-token-failed?-path)))
+    (get-in db verify-token-failed?-path)))
 
 ;; when the button is ready to be rendered (placeholder is in dom, library has
 ;; loaded) then render it
@@ -68,7 +68,7 @@
 
 (defn signin-fail-message
   []
-  (when @(rf/subscribe [::validate-token-failed?])
+  (when @(rf/subscribe [::verify-token-failed?])
     [:div "There was a problem signing in. Please try again."]))
 
 (defn signin-button
@@ -82,16 +82,16 @@
 ;; system components
 ;;---
 
-(defn dispatch-validate-token
+(defn dispatch-verify-token
   "Called when user authenticates with google"
   [google-auth-token opts]
   (let [composable  (dc/composable opts)
         destination (composable :success-destination :home)]
     (rf/dispatch [::dsf/post
-                  {::dsf/req (composable ::dsf/req {:route-name :donut.endpoint.identity.google-auth/validate-token
+                  {::dsf/req (composable ::dsf/req {:route-name :donut.endpoint.identity.google-auth/verify-token
                                                     :params     (-> google-auth-token js->clj walk/keywordize-keys)})
                    ::dfe/on  (composable ::dfe/on {:success [[::dnf/navigate-route {:route-name destination}]]
-                                                   :fail    [[::validate-token-failed]]})}])))
+                                                   :fail    [[::verify-token-failed]]})}])))
 
 (defn google-auth-initialize
   "Called after the gsi client is loaded; initializes and configures it"
@@ -99,7 +99,7 @@
   (let [goog-initialize (dcu/go-get (gis-api) ["initialize"])]
     (goog-initialize
      (clj->js {:client_id (:google-signin-client-id config)
-               :callback  #(dispatch-validate-token % (:validate-token-dispatch-opts config))}))
+               :callback  #(dispatch-verify-token % (:verify-token-dispatch-opts config))}))
 
     ;; TODO logic for one-tap prompt
     #_((dcu/go-get (gis-api) ["prompt"]))
