@@ -1,13 +1,12 @@
 (ns donut.box.identity.identity-store
   (:require
    [buddy.hashers :as buddy-hashers]
-   [donut.dbeasy.next-jdbc :as dben]
-   [donut.protocol-template :as dbpt]
+   [donut.protocol-implementation :as dpi]
    [nano-id.core :as nano-id]
    [next.jdbc.sql :as jsql]))
 
 (def DEFAULT-TOKEN-MAX-AGE
-  "sixty minutes"
+  "twenty minutes"
   (* 60 20))
 
 ;;---
@@ -34,29 +33,63 @@
   (-insert-user! [datasource user])
   (-update-user! [datasource user]))
 
-(dbpt/def-protocol-template
+#_{:clj-kondo/ignore [:unresolved-namespace]}
+(dpi/def-protocol-implementation
   IdentityStore
-  :donut.dbeasy.next-jdbc
+  ::dbeasy.next-jdbc
 
   (-user-by-email
    [datasource email]
-   (dben/query-one datasource {:select [:*]
-                               :from   [:user]
-                               :where  [:= :email email]}))
+   (donut.dbeasy.next-jdbc/query-one datasource {:select [:*]
+                                                 :from   [:user]
+                                                 :where  [:= :email email]}))
 
   (-user-by-reset-password-token
    [datasource token]
-   (dben/query-one datasource {:select [:*]
-                               :from   [:user]
-                               :where  [:= :reset-password-token token]}))
+   (donut.dbeasy.next-jdbc/query-one datasource {:select [:*]
+                                                 :from   [:user]
+                                                 :where  [:= :reset-password-token token]}))
 
   (-insert-user!
    [datasource user]
-   (dben/insert! datasource user))
+   (donut.dbeasy.next-jdbc/insert! datasource user))
 
   (-update-user!
    [datasource user]
    (jsql/update! datasource :user user (select-keys user [:user/id]))))
+
+#_{:clj-kondo/ignore [:unresolved-namespace]}
+(dpi/def-protocol-implementation
+  IdentityStore
+  ::datomic-client
+  
+  (-user-by-email
+   [conn email]
+   (->> (datomic.client.api/q '[:find (pull ?e [:*])
+                                :in $ ?email
+                                :where [?e :user/email ?email]]
+                              (datomic.client.api/db conn)
+                              email)
+        ffirst))
+
+  (-user-by-reset-password-token
+   [conn token]
+   (->> (datomic.client.api/q '[:find (pull ?e [:*])
+                                :in $ ?token
+                                :where [?e :user/password-reset-token ?token]]
+                              (datomic.client.api/db conn)
+                              token)
+        ffirst))
+
+  (-insert-user!
+   [conn user]
+   (datomic.client.api/transact conn {:tx-data [(select-keys user [:user/email :user/name])]})
+   (-user-by-email conn (:user/email user)))
+
+  (-update-user!
+   [conn user]
+   (datomic.client.api/transact conn {:tx-data [(assoc user :db/id [:user/email (:user/email user)])]})
+   user))
 
 (defn user-by-credentials
   [datasource {:keys [:user/password :user/email]}]
