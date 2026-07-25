@@ -14,6 +14,11 @@
          party.donut/sugar                       {:mvn/version "0.0.19"}
          party.donut/system                      {:mvn/version "0.0.214"}}
 
+ :donut/lib {:name           party.donut/box.identity
+             :description    "full stack auth"
+             :github         "donut-party/box.identity"
+             :version-prefix "0.0"}
+
  :aliases
  {:dev
   {:extra-paths ["dev" "test" "resources"]}
@@ -41,6 +46,6 @@
    :exec-fn     cljs-test-runner.main/-main}
 
   :build
-  {:deps       {io.github.clojure/tools.build {:mvn/version "0.9.6"}
-                slipset/deps-deploy           {:mvn/version "0.2.1"}}
-   :ns-default build}}}
+  {:deps       {io.github.donut-party/framework-build
+                {:git/sha "912e0b0ffc914cf1b5824650268307062d92e40c"}}
+   :ns-default donut.build}}}
